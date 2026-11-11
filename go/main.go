@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"golang.org/x/term"
@@ -46,11 +47,13 @@ func (t *terminal) leave() {
 }
 
 func (t *terminal) size() (int, int) {
-	width, height, err := term.GetSize(int(os.Stdout.Fd()))
-	if err != nil || width <= 0 || height <= 0 {
-		return 100, 32
+	for _, fd := range []int{int(os.Stdout.Fd()), int(os.Stdin.Fd())} {
+		width, height, err := term.GetSize(fd)
+		if err == nil && width > 0 && height > 0 {
+			return width, height
+		}
 	}
-	return width, height
+	return 100, 32
 }
 
 type fetchResult struct {
@@ -130,7 +133,11 @@ func runInteractive(opts options, color bool) {
 
 	draw := func() {
 		width, height := terminalUI.size()
-		fmt.Print("\x1b[H" + render(snapshot, sessions, showSessions, width, height, color, errMessage) + "\x1b[J")
+		frame := strings.Split(render(snapshot, sessions, showSessions, width, height, color, errMessage), "\n")
+		for index := range frame {
+			frame[index] = pad(frame[index], width)
+		}
+		fmt.Print("\x1b[H" + strings.Join(frame, "\r\n") + "\x1b[J")
 	}
 
 	draw()

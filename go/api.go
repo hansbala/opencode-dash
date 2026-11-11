@@ -98,13 +98,15 @@ type sessionList struct {
 }
 
 type sessionSummary struct {
-	ID    string    `json:"id"`
-	Title string    `json:"title"`
-	Model *modelRef `json:"model"`
-	Cost  float64   `json:"cost"`
-	Time  struct {
-		Created int64 `json:"created"`
-	} `json:"time"`
+	ID    string      `json:"id"`
+	Title string      `json:"title"`
+	Model *modelRef   `json:"model"`
+	Cost  float64     `json:"cost"`
+	Time  sessionTime `json:"time"`
+}
+
+type sessionTime struct {
+	Created int64 `json:"created"`
 }
 
 type snapshot struct {

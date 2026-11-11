@@ -96,6 +96,43 @@ func truncate(text string, width int) string {
 	return string(runes[:width-1]) + "…"
 }
 
+func truncateVisible(text string, width int) string {
+	if width <= 0 {
+		return ""
+	}
+	if visibleLength(text) <= width {
+		return text
+	}
+	var out strings.Builder
+	visible := 0
+	escaping := false
+	hadEscape := false
+	for _, r := range text {
+		if escaping {
+			out.WriteRune(r)
+			if r == 'm' {
+				escaping = false
+			}
+			continue
+		}
+		if r == '\x1b' {
+			escaping = true
+			hadEscape = true
+			out.WriteRune(r)
+			continue
+		}
+		if visible >= width {
+			break
+		}
+		out.WriteRune(r)
+		visible++
+	}
+	if hadEscape {
+		out.WriteString("\x1b[0m")
+	}
+	return out.String()
+}
+
 func bar(fraction float64, width int, t theme) string {
 	fraction = min(1, max(0, fraction))
 	filled := int(math.Round(fraction * float64(width)))
@@ -258,6 +295,12 @@ func render(
 		renderSessions(sessions, width, height, t, &lines)
 	} else {
 		renderDashboard(snapshot, width, height, t, &lines)
+	}
+	if height > 0 && len(lines) > height {
+		lines = lines[:height]
+	}
+	for index := range lines {
+		lines[index] = truncateVisible(lines[index], width)
 	}
 	return strings.Join(lines, "\n")
 }
